@@ -8,14 +8,19 @@ Using this model, BigMart will try to understand the properties of products and 
 ## Hypothesis 
 
 ## Loading Packages
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+import numpy as np 
+
+import pandas as pd
+
 import matplotlib.pyplot as plt
+
 %matplotlib inline
+
 import seaborn as sns
 
 ## Importing dataset
 train = pd.read_csv(r"C:\Users\shilp\Desktop\Internship\Train.csv")
+
 test = pd.read_csv(r"C:\Users\shilp\Desktop\Internship\Test.csv")
 
 
@@ -26,14 +31,13 @@ train.tail()
 print(train.shape)
 print(test.shape)
 
-###The train data consists of 8,523 training examples with 12 features.
-###The test data consists of 5,681 training examples with 11 features
+#The train data consists of 8,523 training examples with 12 features.
+#The test data consists of 5,681 training examples with 11 features
 
 train.columns
 test.columns
-
 train.info()
-### there are 4 float type 6 object type and 1 int type.
+#there are 4 float type 6 object type and 1 int type.
 train.describe()
 
  
