@@ -98,4 +98,52 @@ correlation['Item_Outlet_Sales'].sort_values(ascending=False)
 #From the above result, we can see that Item_MRP have the most positive correlation and the Item_Visibility have the lowest correlation with our target variable. 
 
 
+### univariate : cateogorical
+cateogorical = train.select_dtypes(include = ['object']).dtypes.index
+
+cateogorical
+
+train['Item_Identifier'].value_counts()
+
+sns.countplot(train.Item_Fat_Content)
+plt.title('Value counts: \n{}'.format(train['Item_Fat_Content'].value_counts(normalize = True)))
+
+#Around 60% of the total items contains low fat while remaining contains regular fat.
+
+#### Distribution of the variable Item_Type
+sns.countplot(train.Item_Type)
+
+plt.xticks(rotation=90)
+
+plt.title('Value counts: \n{}'.format(train['Item_Type'].value_counts(normalize = True)))
+
+#forItem_Type we have 16 different types of unique values and it is high number for categorical variable. Therefore we must try to reduce it.
+
+#### Distribution of the variable Outlet_Size
+
+sns.countplot(train.Outlet_Size)
+
+plt.title('Value counts: \n{}'.format(train['Outlet_Size'].value_counts(normalize = True)))
+
+
+#There seems to be less number of stores with size equals to “High”. It will be very interesting to see how this variable relates to our target.
+
+#### Distribution of the variable Outlet_Location_Type
+
+sns.countplot(train.Outlet_Location_Type)
+
+plt.title('Value counts: \n{}'.format(train['Outlet_Location_Type'].value_counts(normalize = True)))
+
+#39% of the items sells from the stores laocated in Tier 3 cities, while 32% and 28% items are sells from the stores located in Tier 2 and Tier 1 cities.
+
+#### Distribution of the variable Outlet_Type
+
+sns.countplot(train.Outlet_Type)
+
+plt.xticks(rotation=90)
+
+plt.title('Value counts: \n{}'.format(train['Outlet_Type'].value_counts(normalize = True)))
+
+#65% of the items are sell from Supermarket Type 1 whih is almost twice the other types of stores. i.e most of the customers prefer to buy the items from the Supermarket Type 1 stores.
+
  
