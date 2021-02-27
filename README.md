@@ -146,4 +146,36 @@ plt.title('Value counts: \n{}'.format(train['Outlet_Type'].value_counts(normaliz
 
 #65% of the items are sell from Supermarket Type 1 whih is almost twice the other types of stores. i.e most of the customers prefer to buy the items from the Supermarket Type 1 stores.
 
+
+
+## bivariate analysis
+
+### bivariate : numerical - numerical
+
+numerical = train.select_dtypes(include = ['int64','float64','Int64'])
+
+numerical.dtypes.index
+
+numerical.corr(method = 'pearson')
+
+numerical.corr(method='spearman')
+
+#### Heatmap
+plt.figure(figsize = (16,5))
+
+plt.subplot(1,2,1)
+
+sns.heatmap(numerical.corr(method = 'pearson'), cbar = True, annot = True,linewidths = 1)
+
+plt.subplot(1,2,2)
+
+sns.heatmap(numerical.corr(method = 'spearman'), cbar = True, annot = True,linewidths = 1)
+
+sns.pairplot(numerical)
+
+#Item_MRP is somewhat correlated with Item_Outlet_Sales. So Item_MRP can be important feature for predicting Item_Outlet_Sales at particular store.
+#Increase in the item_visibility can decrease the item outlet sales because it is having negative correlation.
+#Item weight and Item_Establishment_Year does not have any realationship with Item_Outlet_Sales.
+
+
  
