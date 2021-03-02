@@ -8,174 +8,234 @@ Using this model, BigMart will try to understand the properties of products and 
 ## Hypothesis 
 Are the items with less visibility having more sales.
 
-## Loading Packages
-import numpy as np 
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar  2 16:25:02 2021
 
+@author: shilp
+"""
+
+
+## Libraries
 import pandas as pd
-
-import matplotlib.pyplot as plt
-
-%matplotlib inline
-
+import numpy as np
 import seaborn as sns
+import matplotlib.pyplot as plt
+import warnings
+%matplotlib inline #(to visualise graph instantly)
+warnings.filterwarnings('ignore')
+import os
 
-## Importing dataset
-train = pd.read_csv(r"C:\Users\shilp\Desktop\Internship\Train.csv")
 
-test = pd.read_csv(r"C:\Users\shilp\Desktop\Internship\Test.csv")
+## Importing Datasets
 
+os.chdir('C:/Users/shilp/Desktop/Internship')
+df = pd.read_csv('Train.csv')
+df.head()
 
-## Data structure and content
-train.head()
+### Statistical information
+df.describe()
 
-train.tail()
+### datatype of attributes
+df.info()
 
-print(train.shape)
+### Check unique values in dataset
+df.apply(lambda x: len(x.unique()))
 
-print(test.shape)
+## Preprocessing the dataset
 
-#The train data consists of 8,523 training examples with 12 features.
-#The test data consists of 5,681 training examples with 11 features
+### check for null values
+df.isnull().sum()
 
-train.columns
+### Check for cateogorical attributes
+cat_col = []
+for x in df.dtypes.index:
+    if df.dtypes[x] == 'object':
+        cat_col.append(x)
+cat_col
 
-test.columns
+cat_col.remove('Item_Identifier')
+cat_col.remove('Outlet_Identifier')
+cat_col
 
-train.info()
+### Print the cateogorical columns
+for col in cat_col:
+    print(col)
+    print(df[col].value_counts())
+    print()
 
-#there are 4 float type 6 object type and 1 int type.
+## Fill missing values
+#pivot table function in pandas library
+item_weight_mean = df.pivot_table(values = 'Item_Weight', index = 'Item_Identifier')
+item_weight_mean
 
-## Univariate analysis
-Univariate analysis is the simplest form of analyzing data. “Uni” means “one”, so in other words your data has only one variable. It doesn’t deal with causes or relationships (unlike regression ) and it’s major purpose is to describe; It takes data, summarizes that data and finds patterns in the data.
+#get info of missing values
+miss_bool = df['Item_Weight'].isnull()
+miss_bool
 
 
-### univariate : numerical
-pd.set_option('display.max_columns', None)
+#Lets fill missing values
+for i, item in enumerate(df['Item_Identifier']):
+    if miss_bool[i]:
+        if item in item_weight_mean:
+            df['Item_Weight'][i] = item_weight_mean.loc[item]['Item_Weight']
+        else:
+            df['Item_Weight'][i] = 0
+df['Item_Weight'].isnull().sum()
 
-print('Number of trainings examples:', len(train),'\n')
 
-train.describe()
+outlet_size_mode = df.pivot_table(values = 'Outlet_Size',columns = 'Outlet_Type',aggfunc= (lambda x: x.mode()[0]))
+outlet_size_mode
 
-#So, here we can see that Total count of Item_Weight is 7060 which is less than the length of the training dataset, therefore it may contains some missing values.
+miss_bool = df['Outlet_Size'].isnull()
+df.loc[miss_bool,'Outlet_Size'] = df.loc[miss_bool, 'Outlet_Type'].apply(lambda x:outlet_size_mode[x])
 
-#The average weight of all items is 12.85kg and the maximum weight of the item is 21.3 kg. So it is clear that the stores are not selling heavy weight items.
+df['Outlet_Size'].isnull().sum()
 
-#The maximum price of the items is 266, so we can say that the stores does not selling costly items like TV, mobile phones, laptops etc.
+sum(df['Item_Visibility']==0)
 
-#Most recent store was established in 2009 and the oldest store was established in 1985.
+df.loc[:,'Item_Visibility'].replace([0],[df['Item_Visibility'].mean()],inplace = True)
+sum(df['Item_Visibility']==0)
 
-#Average sales of items is Rs 2181 and the maximum sale is Rs 13,086.
 
-#### making a list of numerical columns
-numerical = train.select_dtypes(include = [np.number])
+### Combine item fat content
+df['Item_Fat_Content'] = df['Item_Fat_Content'].replace({'low fat':'Low Fat','reg':'Regular','LF':'Low Fat'})
+df.Item_Fat_Content.value_counts()
 
-numerical
+## Creation of new attributes
+#New item type
+df['New_Item_Type'] = df['Item_Identifier'].apply(lambda x: x[:2])
+df['New_Item_Type']
 
-#### distribution of target variable
+df['New_Item_Type'] = df['New_Item_Type'].map({'FD':'Food','NC':'Non-Consumable','DR':'Drinks'})
+df['New_Item_Type'].value_counts()
 
-plt.figure(figsize=(12,7))
+df.loc[df['New_Item_Type']=='Non-Consumable','Item_Fat_Content'] = 'Non-Edible'
+df['Item_Fat_Content'].value_counts()
 
-sns.distplot(train.Item_Outlet_Sales, bins = 25)
+### Create small values for establishment year
+df['Outlet_Years'] = 2013 - df['Outlet_Establishment_Year']
+df['Outlet_Years']
 
-plt.xlabel("Item_Outlet_Sales")
+df.head()
 
-plt.ylabel("Number of Sales")
+## Exploratory data analysis\
+sns.distplot(df['Item_Weight'])
+
+sns.distplot(df['Item_Visibility'])
+#all the values is at mean- becz we filled missing values with mean
+
+sns.distplot(df['Item_MRP'])
+
+sns.distplot(df['Item_Outlet_Sales'])
+#We need to normalised the skewed data
+#Log transformation
+df['Item_Outlet_Sales'] = np.log(1+df['Item_Outlet_Sales'])
+sns.distplot(df['Item_Outlet_Sales'])
+#Now its almost normalized
+
+##Cateogorical Attributes
+#using COuntplot
+
+sns.countplot(df['Item_Fat_Content'])
+
+l = list(df['Item_Type'].unique())
+sns.countplot(df['Item_Type'])
+chart.set_xticklabels(labels = 1, rotation = 90)
+
+sns.countplot(df['Outlet_Establishment_Year'])
+
+sns.countplot(df['Outlet_Size'])
+
+sns.countplot(df['Outlet_Location_Type'])
+
+sns.countplot(df['Outlet_Type'])
+
+## Correation Matrix
+corr = df.corr()
+sns.heatmap(corr,annot = True, cmap = 'coolwarm')
+
+## Label Encoding
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+#Convert cateogorical into numerical for better prediction and model can process this column also
+df['Outlet'] = le.fit_transform(df['Outlet_Identifier'])
+df.columns
+cat_col = ['Item_Fat_Content','Item_Type','Outlet_Size','Outlet_Location_Type','Outlet_Type', 'New_Item_Type']
+#We will convert each of them
+for col in cat_col:
+    df[col] = le.fit_transform(df[col])
+
+## One Hot Encoding
+#it will create a new column for each cateogory
+#will improve accuracy of model but it takes time for model to be run
+#instead of labeling you can go directly for one hot encoding
+
+df = pd.get_dummies(df, columns = ['Item_Fat_Content',   'Outlet_Size', 'Outlet_Location_Type', 'Outlet_Type', 'New_Item_Type'])
+#we will not include item type because there are many items in item type and it will make model really big which may have so many features
+df.head()
+#now we have 26 columns
+
+## Train - Test Split
+x = df.drop(columns = ['Outlet_Establishment_Year','Item_Identifier','Outlet_Identifier','Item_Outlet_Sales'])
+y = df['Item_Outlet_Sales']
+
+## Model Training
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import mean_squared_error
+
+def train(model, x, y):
+    #train the model
+    model.fit(x,y)
+    
+    #predict the training set
+    pred = model.predict(x)
+    
+    #perform cross va;idation 
+    cv_score = cross_val_score(model , x, y, scoring = 'neg_mean_squared_error')
+    
+    print("Model report")
+    print("MSE:",mean_squared_error(y,pred))
+    print("CV Score:",cv_score)
+
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+model = LinearRegression(normalize=True)
+train(model, x, y)
+coef = pd.Series(model.coef_, x.columns).sort_values()
+coef.plot(kind = 'bar', title = 'Model Coefficients')
+
+
+model = Ridge(normalize=True)
+train(model, x, y)
+coef = pd.Series(model.coef_, x.columns).sort_values()
+coef.plot(kind = 'bar', title = 'Model Coefficients')
+
+
+model = Lasso()
+#Here we removed normalized = True because that wasnt giving us any result
+train(model, x, y)
+coef = pd.Series(model.coef_, x.columns).sort_values()
+coef.plot(kind = 'bar', title = 'Model Coefficients')
+
+### Advanced models
+from sklearn.tree import DecisionTreeRegressor
+model = DecisionTreeRegressor()
+train(model, x, y)
+coef = pd.Series(model.feature_importances_, x.columns).sort_values(ascending = False)
+coef.plot(kind = 'bar', title = 'Feature Importance')
+#based on cross validation model we take the lowest one
+
+from sklearn.ensemble import RandomForestRegressor
+model = RandomForestRegressor()
+train(model, x, y)
+coef = pd.Series(model.feature_importances_, x.columns).sort_values(ascending = False)
+coef.plot(kind = 'bar', title = 'Feature Importance')
+
+
+from sklearn.ensemble import ExtraTreesRegressor
+model = ExtraTreesRegressor()
+train(model, x, y)
+coef = pd.Series(model.feature_importances_, x.columns).sort_values(ascending = False)
+coef.plot(kind = 'bar', title = 'Feature Importance')
 
-plt.title("Item_Outlet_Sales Distribution")
 
-print ("Skew is:", train.Item_Outlet_Sales.skew())
-
-print("Kurtosis: %f" % train.Item_Outlet_Sales.kurt())
-
-#Most of the stores has a maximum sales in between 450 - 3900. Only few of the stores having sales more than 6000.
-
-correlation = numerical.corr()
-
-correlation
-
-correlation['Item_Outlet_Sales'].sort_values(ascending=False)
-
-#From the above result, we can see that Item_MRP have the most positive correlation and the Item_Visibility have the lowest correlation with our target variable. 
-
-
-### univariate : cateogorical
-cateogorical = train.select_dtypes(include = ['object']).dtypes.index
-
-cateogorical
-
-train['Item_Identifier'].value_counts()
-
-sns.countplot(train.Item_Fat_Content)
-plt.title('Value counts: \n{}'.format(train['Item_Fat_Content'].value_counts(normalize = True)))
-
-#Around 60% of the total items contains low fat while remaining contains regular fat.
-
-#### Distribution of the variable Item_Type
-sns.countplot(train.Item_Type)
-
-plt.xticks(rotation=90)
-
-plt.title('Value counts: \n{}'.format(train['Item_Type'].value_counts(normalize = True)))
-
-#forItem_Type we have 16 different types of unique values and it is high number for categorical variable. Therefore we must try to reduce it.
-
-#### Distribution of the variable Outlet_Size
-
-sns.countplot(train.Outlet_Size)
-
-plt.title('Value counts: \n{}'.format(train['Outlet_Size'].value_counts(normalize = True)))
-
-
-#There seems to be less number of stores with size equals to “High”. It will be very interesting to see how this variable relates to our target.
-
-#### Distribution of the variable Outlet_Location_Type
-
-sns.countplot(train.Outlet_Location_Type)
-
-plt.title('Value counts: \n{}'.format(train['Outlet_Location_Type'].value_counts(normalize = True)))
-
-#39% of the items sells from the stores laocated in Tier 3 cities, while 32% and 28% items are sells from the stores located in Tier 2 and Tier 1 cities.
-
-#### Distribution of the variable Outlet_Type
-
-sns.countplot(train.Outlet_Type)
-
-plt.xticks(rotation=90)
-
-plt.title('Value counts: \n{}'.format(train['Outlet_Type'].value_counts(normalize = True)))
-
-#65% of the items are sell from Supermarket Type 1 whih is almost twice the other types of stores. i.e most of the customers prefer to buy the items from the Supermarket Type 1 stores.
-
-
-
-## bivariate analysis
-
-### bivariate : numerical - numerical
-
-numerical = train.select_dtypes(include = ['int64','float64','Int64'])
-
-numerical.dtypes.index
-
-numerical.corr(method = 'pearson')
-
-numerical.corr(method='spearman')
-
-#### Heatmap
-plt.figure(figsize = (16,5))
-
-plt.subplot(1,2,1)
-
-sns.heatmap(numerical.corr(method = 'pearson'), cbar = True, annot = True,linewidths = 1)
-
-plt.subplot(1,2,2)
-
-sns.heatmap(numerical.corr(method = 'spearman'), cbar = True, annot = True,linewidths = 1)
-
-sns.pairplot(numerical)
-
-#Item_MRP is somewhat correlated with Item_Outlet_Sales. So Item_MRP can be important feature for predicting Item_Outlet_Sales at particular store.
-#Increase in the item_visibility can decrease the item outlet sales because it is having negative correlation.
-#Item weight and Item_Establishment_Year does not have any realationship with Item_Outlet_Sales.
-
-
- 
